@@ -438,6 +438,7 @@ layer parse_yolo4(list *options, size_params params)
         exit(EXIT_FAILURE);
     }
 
+    l.show_details = option_find_int_quiet(options, "show_details", 1);
     l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     char *cpc = option_find_str(options, "counters_per_class", 0);
     l.classes_multipliers = get_classes_multipliers_y4(cpc, classes, l.max_delta);
@@ -445,7 +446,8 @@ layer parse_yolo4(list *options, size_params params)
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
-    l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
+    l.new_coords = option_find_int_quiet(options, "new_coords", 0);
+    l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75f);
     l.obj_normalizer = option_find_float_quiet(options, "obj_normalizer", 1);
     l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
     l.delta_normalizer = option_find_float_quiet(options, "delta_normalizer", 1);
