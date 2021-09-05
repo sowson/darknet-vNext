@@ -812,23 +812,24 @@ layer parse_upsample(list *options, size_params params, network *net)
 
 route_layer parse_route(list *options, size_params params, network *net)
 {
+    params.net = net;
     char *l = option_find(options, "layers");
-    int len = strlen(l);
     if(!l) error("Route Layer must specify input layers");
+    int len = strlen(l);
     int n = 1;
     int i;
     for(i = 0; i < len; ++i){
         if (l[i] == ',') ++n;
     }
 
-    int *layers = calloc(n, sizeof(int));
-    int *sizes = calloc(n, sizeof(int));
+    int* layers = (int*)calloc(n, sizeof(int));
+    int* sizes = (int*)calloc(n, sizeof(int));
     for(i = 0; i < n; ++i){
         int index = atoi(l);
         l = strchr(l, ',')+1;
         if(index < 0) index = params.index + index;
         layers[i] = index;
-        sizes[i] = net->layers[index].outputs;
+        sizes[i] = params.net->layers[index].outputs;
     }
     int batch = params.batch;
 
@@ -837,19 +838,34 @@ route_layer parse_route(list *options, size_params params, network *net)
 
     route_layer layer = make_route_layer(batch, n, layers, sizes, groups, group_id);
 
-    convolutional_layer first = net->layers[layers[0]];
+    convolutional_layer first = params.net->layers[layers[0]];
     layer.out_w = first.out_w;
     layer.out_h = first.out_h;
     layer.out_c = first.out_c;
     for(i = 1; i < n; ++i){
         int index = layers[i];
-        convolutional_layer next = net->layers[index];
+        convolutional_layer next = params.net->layers[index];
         if(next.out_w == first.out_w && next.out_h == first.out_h){
             layer.out_c += next.out_c;
         }else{
+            fprintf(stderr, " The width and height of the input layers are different. \n");
             layer.out_h = layer.out_w = layer.out_c = 0;
         }
     }
+    layer.out_c = layer.out_c / layer.groups;
+
+    layer.w = first.w;
+    layer.h = first.h;
+    layer.c = layer.out_c;
+
+    if (n > 3) fprintf(stderr, " \t    ");
+    else if (n > 1) fprintf(stderr, " \t            ");
+    else fprintf(stderr, " \t\t            ");
+
+    fprintf(stderr, "           ");
+    if (layer.groups > 1) fprintf(stderr, "%d/%d", layer.group_id, layer.groups);
+    else fprintf(stderr, "   ");
+    fprintf(stderr, " -> %4d x%4d x%4d \n", layer.out_w, layer.out_h, layer.out_c);
 
     return layer;
 }
